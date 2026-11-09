@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi Registro de Salud</title>
+  <meta name="theme-color" content="#2a78d6">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="encabezado">
+    <h1>Mi Registro de Salud</h1>
+    <span id="estado-almacen" class="estado"></span>
+  </header>
+
+  <!-- Las pestañas cargan fragmentos HTML con HTMX -->
+  <nav class="pestanas" role="tablist" hx-target="#contenido" hx-swap="innerHTML">
+    <button role="tab" class="activa" hx-get="partials/presion.html" hx-trigger="click, load">❤️ Presión</button>
+    <button role="tab" hx-get="partials/glucosa.html">🩸 Glucosa</button>
+    <button role="tab" hx-get="partials/reportes.html">📊 Reportes</button>
+    <button role="tab" hx-get="partials/ajustes.html">⚙️ Ajustes</button>
+  </nav>
+
+  <main id="contenido" aria-live="polite"></main>
+
+  <div id="aviso" class="aviso" hidden></div>
+
+  <footer class="pie">
+    Esta aplicación es solo para llevar un registro. No sustituye la opinión de tu médico.
+  </footer>
+</body>
+</html>

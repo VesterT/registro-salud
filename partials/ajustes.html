@@ -1,0 +1,47 @@
+<section data-vista="ajustes">
+  <h2>Ajustes</h2>
+  <form class="tarjeta formulario" data-ajustes>
+    <label>Nombre del paciente (aparece en el PDF)<input type="text" name="paciente" placeholder="Opcional"></label>
+
+    <fieldset>
+      <legend>¿Dónde guardar los datos?</legend>
+      <label class="opcion"><input type="radio" name="modo" value="local"> Solo en este dispositivo (navegador)</label>
+      <label class="opcion"><input type="radio" name="modo" value="github"> En archivos CSV dentro de un repositorio de GitHub (se sincroniza entre dispositivos)</label>
+    </fieldset>
+
+    <div data-campos-github>
+      <div class="fila">
+        <label>Usuario de GitHub<input type="text" name="owner" placeholder="mi-usuario" autocomplete="off"></label>
+        <label>Repositorio de datos<input type="text" name="repo" placeholder="registro-salud-datos" autocomplete="off"></label>
+      </div>
+      <div class="fila">
+        <label>Rama<input type="text" name="rama" placeholder="main"></label>
+        <label>Carpeta<input type="text" name="carpeta" placeholder="data"></label>
+      </div>
+      <label>Token de acceso (fine-grained, permiso “Contents: Read and write”)
+        <input type="password" name="token" placeholder="github_pat_…" autocomplete="off">
+      </label>
+      <p class="ayuda">El token se guarda solo en este navegador. Usa un repositorio <strong>privado</strong> para tus datos.</p>
+    </div>
+
+    <div class="acciones">
+      <button type="submit" class="primario">Guardar ajustes</button>
+      <button type="button" class="secundario" data-probar>Probar conexión</button>
+    </div>
+  </form>
+
+  <div class="tarjeta">
+    <h3>Respaldo</h3>
+    <p class="ayuda">Descarga todos tus datos o importa un CSV (reemplaza los datos actuales de ese tipo).</p>
+    <div class="acciones">
+      <button type="button" class="secundario" data-respaldo="presion">⬇️ presion.csv</button>
+      <button type="button" class="secundario" data-respaldo="glucosa">⬇️ glucosa.csv</button>
+    </div>
+    <div class="fila">
+      <label>Importar como
+        <select data-importar-tipo><option value="presion">Presión</option><option value="glucosa">Glucosa</option></select>
+      </label>
+      <label>Archivo CSV<input type="file" accept=".csv,text/csv" data-importar></label>
+    </div>
+  </div>
+</section>

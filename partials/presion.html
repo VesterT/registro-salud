@@ -1,0 +1,32 @@
+<section data-vista="presion">
+  <h2>Presión arterial</h2>
+  <form class="tarjeta formulario" data-form="presion">
+    <input type="hidden" name="id">
+    <div class="fila">
+      <label>Fecha<input type="date" name="fecha" readonly></label>
+      <label>Hora<input type="time" name="hora" required></label>
+    </div>
+    <div class="fila">
+      <label>Sistólica (alta)<input type="number" name="sistolica" inputmode="numeric" min="50" max="300" required placeholder="120"></label>
+      <label>Diastólica (baja)<input type="number" name="diastolica" inputmode="numeric" min="30" max="200" required placeholder="80"></label>
+      <label>Pulso (lpm)<input type="number" name="pulso" inputmode="numeric" min="30" max="250" placeholder="70"></label>
+    </div>
+    <div class="fila">
+      <label>Brazo
+        <select name="brazo"><option>Izquierdo</option><option>Derecho</option></select>
+      </label>
+      <label>Posición
+        <select name="posicion"><option>Sentado</option><option>De pie</option><option>Acostado</option></select>
+      </label>
+    </div>
+    <label>Notas<input type="text" name="notas" maxlength="200" placeholder="Opcional: medicamento, síntomas…"></label>
+    <div class="acciones">
+      <button type="submit" class="primario">Guardar registro</button>
+      <button type="button" class="secundario" data-cancelar hidden>Cancelar edición</button>
+    </div>
+  </form>
+
+  <h3>Registros de hoy</h3>
+  <p class="ayuda">Solo puedes editar o eliminar los registros del día de hoy.</p>
+  <div data-lista-hoy class="lista"></div>
+</section>

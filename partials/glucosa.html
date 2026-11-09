@@ -1,0 +1,31 @@
+<section data-vista="glucosa">
+  <h2>Glucosa (azúcar en sangre)</h2>
+  <form class="tarjeta formulario" data-form="glucosa">
+    <input type="hidden" name="id">
+    <div class="fila">
+      <label>Fecha<input type="date" name="fecha" readonly></label>
+      <label>Hora<input type="time" name="hora" required></label>
+    </div>
+    <div class="fila">
+      <label>Glucosa (mg/dL)<input type="number" name="glucosa" inputmode="numeric" min="20" max="600" required placeholder="100"></label>
+      <label>Momento
+        <select name="momento">
+          <option>En ayunas</option>
+          <option>Antes de comer</option>
+          <option>2 h después de comer</option>
+          <option>Antes de dormir</option>
+          <option>Otro</option>
+        </select>
+      </label>
+    </div>
+    <label>Notas<input type="text" name="notas" maxlength="200" placeholder="Opcional: qué comiste, medicamento…"></label>
+    <div class="acciones">
+      <button type="submit" class="primario">Guardar registro</button>
+      <button type="button" class="secundario" data-cancelar hidden>Cancelar edición</button>
+    </div>
+  </form>
+
+  <h3>Registros de hoy</h3>
+  <p class="ayuda">Solo puedes editar o eliminar los registros del día de hoy.</p>
+  <div data-lista-hoy class="lista"></div>
+</section>
