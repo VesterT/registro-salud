@@ -1,5 +1,5 @@
 /* Mi Registro de Salud — sin backend.
-   Los datos viven en archivos CSV: en un repositorio de GitHub (vía API) o en el navegador. */
+   Los datos viven en archivos CSV dentro de un repositorio privado de GitHub (vía API). */
 
 const ESQUEMAS = {
   presion: {
@@ -80,37 +80,63 @@ function descargar(nombre, contenido, tipo) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/* ---------- Almacenamiento (GitHub o navegador) ---------- */
+/* ---------- Sesión ----------
+   usuarios.json (público) guarda, por usuario, un bloque cifrado con su contraseña
+   (PBKDF2-SHA256 + AES-GCM). Al descifrarlo se obtienen su nombre y el acceso a su
+   carpeta en el repositorio privado de datos. La contraseña nunca se guarda. */
 
-const Ajustes = {
-  leer() { try { return JSON.parse(localStorage.getItem('rs_ajustes')) || {}; } catch { return {}; } },
-  guardar(a) { localStorage.setItem('rs_ajustes', JSON.stringify(a)); },
-  usaGitHub() { const a = this.leer(); return a.modo === 'github' && a.owner && a.repo && a.token; },
+const bytesAb64 = bytes => { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64aBytes = b64 => Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0));
+const b64aTexto = b64 => new TextDecoder().decode(b64aBytes(b64));
+const textoAb64 = texto => bytesAb64(new TextEncoder().encode(texto));
+
+async function huellaCorreo(correo) {
+  const datos = new TextEncoder().encode('registro-salud:' + correo.trim().toLowerCase());
+  return [...new Uint8Array(await crypto.subtle.digest('SHA-256', datos))].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const Sesion = {
+  actual() { try { return JSON.parse(localStorage.getItem('rs_sesion')); } catch { return null; } },
+  async iniciar(correo, contrasena) {
+    const r = await fetch('usuarios.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('No se pudo cargar la lista de usuarios.');
+    const entrada = (await r.json()).usuarios?.[await huellaCorreo(correo)];
+    const invalido = new Error('Correo o contraseña incorrectos.');
+    if (!entrada) throw invalido;
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(contrasena), 'PBKDF2', false, ['deriveKey']);
+    const llave = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', hash: 'SHA-256', salt: b64aBytes(entrada.sal), iterations: entrada.iteraciones },
+      base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    let datos;
+    try { datos = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64aBytes(entrada.iv) }, llave, b64aBytes(entrada.datos)); }
+    catch { throw invalido; }
+    const sesion = JSON.parse(new TextDecoder().decode(datos));
+    localStorage.setItem('rs_sesion', JSON.stringify(sesion));
+    return sesion;
+  },
+  cerrar() { localStorage.removeItem('rs_sesion'); location.reload(); },
 };
 
-const b64aTexto = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
-function textoAb64(texto) {
-  const bytes = new TextEncoder().encode(texto);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(bin);
-}
+/* ---------- Almacenamiento: CSV en el repositorio privado de GitHub ---------- */
 
 const GitHub = {
   url(tipo) {
-    const a = Ajustes.leer();
-    const carpeta = (a.carpeta || 'data').replace(/^\/+|\/+$/g, '');
-    const ruta = (carpeta ? carpeta + '/' : '') + ESQUEMAS[tipo].archivo;
-    return `https://api.github.com/repos/${encodeURIComponent(a.owner)}/${encodeURIComponent(a.repo)}/contents/${ruta}`;
+    const s = Sesion.actual();
+    const carpeta = s.carpeta.replace(/^\/+|\/+$/g, '');
+    return `https://api.github.com/repos/${encodeURIComponent(s.owner)}/${encodeURIComponent(s.repo)}/contents/${carpeta}/${ESQUEMAS[tipo].archivo}`;
   },
   encabezados(extra = {}) {
-    return { Authorization: `Bearer ${Ajustes.leer().token}`, Accept: 'application/vnd.github+json', ...extra };
+    return { Authorization: `Bearer ${Sesion.actual().token}`, Accept: 'application/vnd.github+json', ...extra };
+  },
+  revisar(r, accion) {
+    if (r.status === 401 || r.status === 403) throw new Error('Sin acceso a los datos. Pide al administrador que renueve el acceso.');
+    if (!r.ok) throw new Error(`Error ${r.status} al ${accion} los datos. Revisa tu conexión.`);
   },
   async leer(tipo) {
-    const rama = Ajustes.leer().rama || 'main';
+    const rama = Sesion.actual().rama || 'main';
     const r = await fetch(`${this.url(tipo)}?ref=${encodeURIComponent(rama)}`, { headers: this.encabezados(), cache: 'no-store' });
     if (r.status === 404) return { texto: '', sha: null };
-    if (!r.ok) throw new Error(`GitHub respondió ${r.status} al leer ${ESQUEMAS[tipo].archivo}`);
+    this.revisar(r, 'leer');
     const j = await r.json();
     if (j.content) return { texto: b64aTexto(j.content), sha: j.sha };
     // Archivos de más de 1 MB: la API no incluye el contenido, se pide en crudo.
@@ -119,22 +145,19 @@ const GitHub = {
     return { texto: await raw.text(), sha: j.sha };
   },
   async escribir(tipo, texto, sha, mensaje) {
-    const cuerpo = { message: mensaje, content: textoAb64(texto), branch: Ajustes.leer().rama || 'main' };
+    const cuerpo = { message: mensaje, content: textoAb64(texto), branch: Sesion.actual().rama || 'main' };
     if (sha) cuerpo.sha = sha;
     const r = await fetch(this.url(tipo), { method: 'PUT', headers: this.encabezados(), body: JSON.stringify(cuerpo) });
     if (r.status === 409 || r.status === 422) { const e = new Error('conflicto'); e.conflicto = true; throw e; }
-    if (!r.ok) throw new Error(`GitHub respondió ${r.status} al guardar`);
+    this.revisar(r, 'guardar');
   },
 };
 
 const Datos = {
   cache: {},
   async leer(tipo) {
-    if (Ajustes.usaGitHub()) {
-      const { texto, sha } = await GitHub.leer(tipo);
-      return { filas: ordenar(parsearCSV(texto)), sha };
-    }
-    return { filas: ordenar(parsearCSV(localStorage.getItem('rs_csv_' + tipo) || '')), sha: null };
+    const { texto, sha } = await GitHub.leer(tipo);
+    return { filas: ordenar(parsearCSV(texto)), sha };
   },
   async todas(tipo) {
     const { filas } = await this.leer(tipo);
@@ -147,10 +170,8 @@ const Datos = {
     for (let intento = 0; intento < 3; intento++) {
       const { filas, sha } = await this.leer(tipo);
       const nuevas = ordenar(cambio(filas));
-      const texto = generarCSV(nuevas, cols);
       try {
-        if (Ajustes.usaGitHub()) await GitHub.escribir(tipo, texto, sha, mensaje);
-        else localStorage.setItem('rs_csv_' + tipo, texto);
+        await GitHub.escribir(tipo, generarCSV(nuevas, cols), sha, `${Sesion.actual().nombre}: ${mensaje}`);
         this.cache[tipo] = nuevas;
         return nuevas;
       } catch (e) {
@@ -160,13 +181,6 @@ const Datos = {
     throw new Error('No se pudo guardar por cambios simultáneos. Intenta de nuevo.');
   },
 };
-
-function mostrarEstado() {
-  const el = document.getElementById('estado-almacen');
-  if (!el) return;
-  const a = Ajustes.leer();
-  el.textContent = Ajustes.usaGitHub() ? `☁️ Sincronizado con GitHub` : '📱 Guardado en este dispositivo';
-}
 
 /* ---------- Clasificación (referencia general, no diagnóstico) ---------- */
 
@@ -424,7 +438,8 @@ function vistaReportes(raiz) {
 
     doc.setFontSize(18).setTextColor(91, 63, 168).text(`Reporte de ${esq.nombre}`, m, y); y += 20;
     doc.setFontSize(10).setTextColor(90);
-    const paciente = Ajustes.leer().paciente;
+    const { nombre, apellido } = Sesion.actual();
+    const paciente = [nombre, apellido].filter(Boolean).join(' ');
     if (paciente) { doc.text(`Paciente: ${paciente}`, m, y); y += 14; }
     doc.text(`Periodo: ${fechaMx(filtros.desde.value) || 'inicio'} al ${fechaMx(filtros.hasta.value) || fechaMx(hoy())}`, m, y); y += 14;
     doc.text(`Generado: ${new Date().toLocaleString('es-MX')}`, m, y); y += 20;
@@ -481,74 +496,12 @@ function vistaReportes(raiz) {
   iniciar();
 }
 
-/* ---------- Vista de ajustes ---------- */
-
-function vistaAjustes(raiz) {
-  const form = raiz.querySelector('[data-ajustes]');
-  const camposGH = raiz.querySelector('[data-campos-github]');
-  const a = Ajustes.leer();
-
-  ['paciente', 'owner', 'repo', 'rama', 'carpeta', 'token'].forEach(k => { form[k].value = a[k] || ''; });
-  form.modo.value = a.modo || 'local';
-  const alternar = () => { camposGH.hidden = form.modo.value !== 'github'; };
-  alternar();
-  form.addEventListener('change', alternar);
-
-  const leerForm = () => {
-    const d = Object.fromEntries(new FormData(form));
-    Object.keys(d).forEach(k => { d[k] = d[k].trim(); });
-    return d;
-  };
-
-  form.addEventListener('submit', ev => {
-    ev.preventDefault();
-    Ajustes.guardar(leerForm());
-    Datos.cache = {};
-    mostrarEstado();
-    avisar('Ajustes guardados ✅');
-  });
-
-  raiz.querySelector('[data-probar]').addEventListener('click', async () => {
-    const anterior = Ajustes.leer();
-    Ajustes.guardar({ ...leerForm(), modo: 'github' });
-    try {
-      const a = Ajustes.leer();
-      const r = await fetch(`https://api.github.com/repos/${encodeURIComponent(a.owner)}/${encodeURIComponent(a.repo)}`, { headers: GitHub.encabezados() });
-      if (!r.ok) throw new Error(r.status === 404 ? 'No se encontró el repositorio (o el token no tiene acceso).' : `Error ${r.status}`);
-      const j = await r.json();
-      avisar(`Conexión correcta con ${j.full_name}${j.private ? ' (privado) ✅' : ' — ⚠️ el repositorio es PÚBLICO'}`, j.private ? 'ok' : 'error');
-    } catch (e) { avisar(e.message, 'error'); }
-    finally { Ajustes.guardar(anterior); }
-  });
-
-  raiz.querySelectorAll('[data-respaldo]').forEach(b => b.addEventListener('click', async () => {
-    const tipo = b.dataset.respaldo;
-    try { descargar(ESQUEMAS[tipo].archivo, generarCSV(await Datos.todas(tipo), ESQUEMAS[tipo].columnas), 'text/csv;charset=utf-8'); }
-    catch (e) { avisar(e.message, 'error'); }
-  }));
-
-  raiz.querySelector('[data-importar]').addEventListener('change', async ev => {
-    const archivo = ev.target.files[0];
-    if (!archivo) return;
-    const tipo = raiz.querySelector('[data-importar-tipo]').value;
-    const filas = parsearCSV(await archivo.text());
-    const faltan = ESQUEMAS[tipo].columnas.filter(c => c !== 'id' && c !== 'notas' && !(filas[0] && c in filas[0]));
-    if (!filas.length || faltan.length) { avisar(`El archivo no tiene las columnas esperadas: ${faltan.join(', ')}`, 'error'); return; }
-    if (!confirm(`Se reemplazarán los datos de ${ESQUEMAS[tipo].nombre} con ${filas.length} registros. ¿Continuar?`)) return;
-    filas.forEach(f => { f.id ||= nuevoId(); });
-    try { await Datos.modificar(tipo, () => filas, `Importa ${tipo}`); avisar('Datos importados ✅'); }
-    catch (e) { avisar(e.message, 'error'); }
-    ev.target.value = '';
-  });
-}
-
 /* ---------- Integración con HTMX ---------- */
 
 const VISTAS = {
   presion: r => vistaCaptura(r, 'presion'),
   glucosa: r => vistaCaptura(r, 'glucosa'),
   reportes: vistaReportes,
-  ajustes: vistaAjustes,
 };
 
 document.body.addEventListener('htmx:afterSwap', ev => {
@@ -569,6 +522,46 @@ document.body.addEventListener('htmx:beforeRequest', ev => {
 
 document.body.addEventListener('htmx:responseError', () => avisar('No se pudo cargar la sección.', 'error'));
 
-document.getElementById('fecha-hoy').textContent =
-  new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-mostrarEstado();
+/* ---------- Inicio ---------- */
+
+function mostrarApp(sesion) {
+  document.getElementById('saludo').textContent = `${sesion.saludo || 'Hola'}, ${sesion.nombre}`;
+  document.getElementById('fecha-hoy').textContent =
+    new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  document.body.classList.remove('sin-sesion');
+  document.querySelector('.navegacion button').click();
+}
+
+const formLogin = document.getElementById('form-login');
+formLogin.addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const boton = formLogin.querySelector('[type=submit]');
+  const error = document.getElementById('login-error');
+  boton.disabled = true;
+  boton.textContent = 'Verificando…';
+  error.hidden = true;
+  try {
+    const sesion = await Sesion.iniciar(formLogin.correo.value, formLogin.contrasena.value);
+    formLogin.reset();
+    mostrarApp(sesion);
+  } catch (e) {
+    error.textContent = e.message;
+    error.hidden = false;
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Entrar';
+  }
+});
+
+document.getElementById('cerrar-sesion').addEventListener('click', () => {
+  if (confirm('¿Cerrar sesión en este dispositivo?')) Sesion.cerrar();
+});
+
+// Limpia datos de la versión anterior que guardaba información en el navegador.
+['rs_ajustes', 'rs_csv_presion', 'rs_csv_glucosa'].forEach(k => localStorage.removeItem(k));
+
+// HTMX se inicializa en DOMContentLoaded; esperamos para que las pestañas ya respondan.
+document.addEventListener('DOMContentLoaded', () => {
+  const sesion = Sesion.actual();
+  if (sesion) mostrarApp(sesion);
+});

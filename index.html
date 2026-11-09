@@ -17,12 +17,31 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
-<body>
+<body class="sin-sesion">
+  <!-- Pantalla de inicio de sesión -->
+  <section class="login" aria-labelledby="login-titulo">
+    <div class="login-tarjeta">
+      <img src="icon.svg" alt="" class="login-icono">
+      <h1 id="login-titulo">Mi Registro de Salud</h1>
+      <p class="ayuda">Inicia sesión para ver y capturar tus registros.</p>
+      <form id="form-login" class="formulario">
+        <label class="campo">Correo<input type="email" name="correo" required autocomplete="username" autocapitalize="off" inputmode="email"></label>
+        <label class="campo">Contraseña<input type="password" name="contrasena" required autocomplete="current-password"></label>
+        <p id="login-error" class="login-error" role="alert" hidden></p>
+        <button type="submit" class="boton relleno ancho">Entrar</button>
+      </form>
+    </div>
+  </section>
+
   <header class="barra-superior">
     <div class="barra-contenido">
-      <h1>Bienvenida Vanessa <span aria-hidden="true">💜</span></h1>
+      <div class="barra-fila">
+        <h1><span id="saludo"></span> <span aria-hidden="true">💜</span></h1>
+        <button type="button" id="cerrar-sesion" class="boton-icono claro" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </button>
+      </div>
       <p id="fecha-hoy" class="subtitulo"></p>
-      <span id="estado-almacen" class="chip-estado"></span>
     </div>
   </header>
 
@@ -30,7 +49,7 @@
 
   <!-- Navegación: las pestañas cargan fragmentos HTML con HTMX -->
   <nav class="navegacion" role="tablist" hx-target="#contenido" hx-swap="innerHTML">
-    <button role="tab" class="activa" aria-selected="true" hx-get="partials/presion.html" hx-trigger="click, load">
+    <button role="tab" class="activa" aria-selected="true" hx-get="partials/presion.html">
       <span class="icono"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
       <span class="texto">Presión</span>
     </button>
@@ -41,10 +60,6 @@
     <button role="tab" aria-selected="false" hx-get="partials/reportes.html">
       <span class="icono"><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></span>
       <span class="texto">Reportes</span>
-    </button>
-    <button role="tab" aria-selected="false" hx-get="partials/ajustes.html">
-      <span class="icono"><svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg></span>
-      <span class="texto">Ajustes</span>
     </button>
   </nav>
 

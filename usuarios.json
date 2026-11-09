@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "usuarios": {
+    "3fdd3d9508d1d12816a38e5a227ab90cb8469e59e0e4a25468a30ea7ff017372": {
+      "sal": "s2OxaxT/MzNzaS8oJ9y5Mw==",
+      "iv": "QPVDxQS3aOpYJy+X",
+      "iteraciones": 600000,
+      "datos": "bk8AIBrKw5Cs0zDTbkMZyooKq/JysM8oMNPhP/wUnG0BDbq6Epv+2noUWnU44Euir3Iy2PfexGN2tUAwI3fTJbgN/S5Ou/EfNTZJkFr9PRLXemvL1L/ccx0ZfOhhlP5k4D28NfE0+JSw0xxGelCLgjq3VAfzdOY3+4sIbbmZzg3mUq7c8Psr4fvWj/JWpZ5OytLKclDVuCdLoLyvnFDtX2MstfnaEF9tDAsXc27nEqI0P1c="
+    }
+  }
+}

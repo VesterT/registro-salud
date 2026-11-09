@@ -59,18 +59,34 @@ svg { width: 24px; height: 24px; fill: currentColor; flex: none; }
 .barra-superior h1 { margin: 0; font-size: 1.75rem; font-weight: 600; letter-spacing: -.01em; }
 .subtitulo { margin: 4px 0 12px; opacity: .9; font-size: .95rem; }
 .subtitulo::first-letter { text-transform: uppercase; }
-.chip-estado {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: .78rem; padding: 4px 12px; border-radius: 999px;
-  background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .3);
+.barra-fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.subtitulo { margin-bottom: 0; }
+.boton-icono.claro { color: #fff; background: rgba(255, 255, 255, .16); }
+.boton-icono.claro:hover { background: rgba(255, 255, 255, .28); }
+
+/* ---------- Inicio de sesión ---------- */
+.login { display: none; }
+body.sin-sesion { padding-bottom: 0; }
+body.sin-sesion .login {
+  display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 24px 16px;
+  background: linear-gradient(160deg, #4a2c96 0%, #7b52c7 50%, #b05b9c 100%);
 }
+body.sin-sesion > :not(.login):not(.aviso) { display: none !important; }
+.login-tarjeta {
+  width: 100%; max-width: 400px; background: var(--tarjeta); border-radius: var(--radio-l);
+  padding: 32px 24px; box-shadow: var(--sombra-2); text-align: center;
+}
+.login-tarjeta .formulario { text-align: left; margin-top: 20px; }
+.login-tarjeta h1 { font-size: 1.5rem; margin: 12px 0 4px; color: var(--primario); }
+.login-icono { width: 72px; height: 72px; }
+.login-error { margin: 0; padding: 10px 12px; border-radius: var(--radio-s); background: var(--critico-fondo); color: var(--critico); font-size: .9rem; }
 
 main { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 
 /* ---------- Navegación inferior (estilo Material) ---------- */
 .navegacion {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   height: calc(var(--alto-nav) + env(safe-area-inset-bottom));
   padding: 12px 8px env(safe-area-inset-bottom);
   background: var(--superficie-contenedor);

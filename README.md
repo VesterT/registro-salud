@@ -1,77 +1,60 @@
 # Mi Registro de Salud
 
-App web sencilla para registrar **presión arterial** y **glucosa**. Sin servidor ni base de datos:
-los datos se guardan en archivos **CSV**.
+App web sencilla para registrar **presión arterial** y **glucosa**, con inicio de sesión por usuario.
+Sin servidor ni base de datos: los datos se guardan en archivos **CSV** dentro de un repositorio
+**privado** de GitHub, y la app se publica gratis en **GitHub Pages**.
 
 - HTML + HTMX (pestañas) + JavaScript sin frameworks.
 - Librerías por CDN: Chart.js (gráficas) y jsPDF (reporte PDF).
-- Se publica gratis en **GitHub Pages**.
 
-## ¿Dónde se guardan los datos?
+## Cómo funciona
 
-En **Ajustes** eliges:
+| Repositorio | Visibilidad | Contenido |
+|---|---|---|
+| `registro-salud` | público (GitHub Pages) | La app y `usuarios.json` (cifrado) |
+| `registro-salud-datos` | **privado** | `data/<usuario>/presion.csv` y `glucosa.csv` |
 
-1. **Solo este dispositivo**: los CSV se guardan en el navegador. Funciona sin configurar nada,
-   pero los datos no se comparten entre el celular y la computadora, y se pierden si borras los datos del navegador.
-2. **GitHub (recomendado)**: la app lee y escribe `data/presion.csv` y `data/glucosa.csv`
-   directamente en un repositorio **privado** usando la API de GitHub. Así tienes los mismos datos en
-   cualquier dispositivo y un historial de cada cambio.
+`usuarios.json` no contiene datos legibles: el correo se guarda como huella SHA-256 y el perfil
+(nombre, apellido, carpeta y token de acceso al repositorio privado) va cifrado con la contraseña
+del usuario (PBKDF2-SHA256 con 600 000 iteraciones + AES-256-GCM). La contraseña no se guarda en
+ningún lado: iniciar sesión = poder descifrar el perfil. La sesión queda guardada en el dispositivo
+hasta tocar **Cerrar sesión**.
 
-> Usa **dos repositorios**: uno público para la app (GitHub Pages gratis necesita repo público)
-> y uno **privado** para tus datos de salud.
+Usa contraseñas largas: como `usuarios.json` es público, una contraseña débil podría adivinarse por fuerza bruta.
 
-## Publicar la app (una sola vez)
+## Administrar usuarios (no hay pantalla para esto en la app)
 
-1. Crea una cuenta en https://github.com si no tienes.
-2. Crea un repositorio **público** llamado, por ejemplo, `registro-salud`.
-3. Sube estos archivos (puedes arrastrarlos en *Add file → Upload files*, o con git):
-   ```bash
-   cd registro-salud
-   git init && git add . && git commit -m "Primera versión"
-   git branch -M main
-   git remote add origin https://github.com/TU_USUARIO/registro-salud.git
-   git push -u origin main
-   ```
-4. En el repositorio: **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save**.
-5. En un par de minutos la app estará en `https://TU_USUARIO.github.io/registro-salud/`.
+```bash
+# Agregar o actualizar (pide contraseña y token sin mostrarlos)
+node tools/usuarios.mjs agregar --correo ana@correo.com --nombre Ana --apellido López --saludo Bienvenida
 
-## Configurar el almacenamiento en GitHub
+# Eliminar (sus CSV permanecen en el repositorio privado)
+node tools/usuarios.mjs eliminar --correo ana@correo.com
+```
 
-1. Crea un repositorio **privado**, por ejemplo `registro-salud-datos`
-   (marca “Add a README” para que tenga la rama `main`).
-2. Crea un token: **Settings (de tu perfil) → Developer settings → Personal access tokens →
-   Fine-grained tokens → Generate new token**
-   - *Repository access*: **Only select repositories** → `registro-salud-datos`
-   - *Permissions → Repository permissions → Contents*: **Read and write**
-   - Elige una fecha de expiración (por ejemplo, 1 año).
-3. Abre la app → **Ajustes** → elige *GitHub*, escribe tu usuario, `registro-salud-datos`, rama `main`,
-   carpeta `data` y pega el token → **Probar conexión** → **Guardar ajustes**.
-4. Repite el paso 3 en cada dispositivo (el token se guarda solo en ese navegador).
+Luego sube el `usuarios.json` actualizado al repositorio de la app.
 
-Los archivos `data/presion.csv` y `data/glucosa.csv` se crean solos al guardar el primer registro.
+Si cambias el token de GitHub, vuelve a ejecutar `agregar` para cada usuario (se necesita su contraseña).
+
+## Token de acceso a los datos
+
+En GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
+- *Repository access*: **Only select repositories** → `registro-salud-datos`
+- *Permissions → Contents*: **Read and write**
+- Expiración: la que prefieras (al vencer, genera otro y vuelve a ejecutar `agregar`).
 
 ## Formato de los CSV
 
-`presion.csv`
-```
-id,fecha,hora,sistolica,diastolica,pulso,brazo,posicion,notas
-```
+`presion.csv`: `id,fecha,hora,sistolica,diastolica,pulso,brazo,posicion,notas`
 
-`glucosa.csv`
-```
-id,fecha,hora,glucosa,momento,notas
-```
+`glucosa.csv`: `id,fecha,hora,glucosa,momento,notas`
 
-Fechas en formato `AAAA-MM-DD` y horas `HH:MM`. Puedes abrirlos en Excel o Google Sheets.
+Fechas `AAAA-MM-DD`, horas `HH:MM`. Puedes editarlos directamente en GitHub o abrirlos en Excel.
 
 ## Probar en tu computadora
 
-HTMX necesita servir los archivos por HTTP (no funciona abriendo `index.html` con doble clic):
-
 ```bash
-cd registro-salud
-python3 -m http.server 8000
-# abre http://localhost:8000
+python3 -m http.server 8000   # y abre http://localhost:8000
 ```
 
 ## Reglas
