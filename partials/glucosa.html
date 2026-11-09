@@ -1,31 +1,32 @@
 <section data-vista="glucosa">
-  <h2>Glucosa (azúcar en sangre)</h2>
+  <h2 class="titulo-seccion">Glucosa</h2>
   <form class="tarjeta formulario" data-form="glucosa">
     <input type="hidden" name="id">
     <div class="fila">
-      <label>Fecha<input type="date" name="fecha" readonly></label>
-      <label>Hora<input type="time" name="hora" required></label>
+      <label class="campo">Fecha<input type="date" name="fecha" readonly></label>
+      <label class="campo">Hora<input type="time" name="hora" required></label>
     </div>
-    <div class="fila">
-      <label>Glucosa (mg/dL)<input type="number" name="glucosa" inputmode="numeric" min="20" max="600" required placeholder="100"></label>
-      <label>Momento
-        <select name="momento">
-          <option>En ayunas</option>
-          <option>Antes de comer</option>
-          <option>2 h después de comer</option>
-          <option>Antes de dormir</option>
-          <option>Otro</option>
-        </select>
-      </label>
-    </div>
-    <label>Notas<input type="text" name="notas" maxlength="200" placeholder="Opcional: qué comiste, medicamento…"></label>
+    <label class="campo grande">Nivel de glucosa<input type="number" name="glucosa" inputmode="numeric" min="20" max="600" required placeholder="100"><small>mg/dL</small></label>
+    <fieldset class="campo">
+      <legend>Momento</legend>
+      <div class="chips" data-chips="momento">
+        <label class="chip"><input type="radio" name="momento" value="En ayunas" checked><span>En ayunas</span></label>
+        <label class="chip"><input type="radio" name="momento" value="Antes de comer"><span>Antes de comer</span></label>
+        <label class="chip"><input type="radio" name="momento" value="2 h después de comer"><span>2 h después de comer</span></label>
+        <label class="chip"><input type="radio" name="momento" value="Antes de dormir"><span>Antes de dormir</span></label>
+        <label class="chip"><input type="radio" name="momento" value="Otro"><span>Otro</span></label>
+      </div>
+    </fieldset>
+    <label class="campo">Notas<input type="text" name="notas" maxlength="200" placeholder="Opcional: qué comiste, medicamento…"></label>
     <div class="acciones">
-      <button type="submit" class="primario">Guardar registro</button>
-      <button type="button" class="secundario" data-cancelar hidden>Cancelar edición</button>
+      <button type="submit" class="boton relleno ancho">Guardar registro</button>
+      <button type="button" class="boton texto" data-cancelar hidden>Cancelar edición</button>
     </div>
   </form>
 
-  <h3>Registros de hoy</h3>
-  <p class="ayuda">Solo puedes editar o eliminar los registros del día de hoy.</p>
+  <div class="encabezado-lista">
+    <h3>Registros de hoy</h3>
+    <span class="ayuda">Solo se editan los de hoy</span>
+  </div>
   <div data-lista-hoy class="lista"></div>
 </section>

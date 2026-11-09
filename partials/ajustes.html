@@ -1,47 +1,49 @@
 <section data-vista="ajustes">
-  <h2>Ajustes</h2>
+  <h2 class="titulo-seccion">Ajustes</h2>
   <form class="tarjeta formulario" data-ajustes>
-    <label>Nombre del paciente (aparece en el PDF)<input type="text" name="paciente" placeholder="Opcional"></label>
+    <label class="campo">Nombre del paciente (aparece en el PDF)<input type="text" name="paciente" placeholder="Vanessa"></label>
 
-    <fieldset>
+    <fieldset class="campo">
       <legend>¿Dónde guardar los datos?</legend>
-      <label class="opcion"><input type="radio" name="modo" value="local"> Solo en este dispositivo (navegador)</label>
-      <label class="opcion"><input type="radio" name="modo" value="github"> En archivos CSV dentro de un repositorio de GitHub (se sincroniza entre dispositivos)</label>
+      <label class="opcion"><input type="radio" name="modo" value="local"><span><strong>Solo en este celular</strong><small>Sin configurar nada, pero no se comparte con otros dispositivos.</small></span></label>
+      <label class="opcion"><input type="radio" name="modo" value="github"><span><strong>En GitHub (CSV)</strong><small>Se sincroniza entre dispositivos y guarda historial.</small></span></label>
     </fieldset>
 
-    <div data-campos-github>
+    <div data-campos-github class="formulario">
       <div class="fila">
-        <label>Usuario de GitHub<input type="text" name="owner" placeholder="mi-usuario" autocomplete="off"></label>
-        <label>Repositorio de datos<input type="text" name="repo" placeholder="registro-salud-datos" autocomplete="off"></label>
+        <label class="campo">Usuario de GitHub<input type="text" name="owner" placeholder="mi-usuario" autocomplete="off" autocapitalize="off"></label>
+        <label class="campo">Repositorio de datos<input type="text" name="repo" placeholder="registro-salud-datos" autocomplete="off" autocapitalize="off"></label>
       </div>
       <div class="fila">
-        <label>Rama<input type="text" name="rama" placeholder="main"></label>
-        <label>Carpeta<input type="text" name="carpeta" placeholder="data"></label>
+        <label class="campo">Rama<input type="text" name="rama" placeholder="main" autocapitalize="off"></label>
+        <label class="campo">Carpeta<input type="text" name="carpeta" placeholder="data" autocapitalize="off"></label>
       </div>
-      <label>Token de acceso (fine-grained, permiso “Contents: Read and write”)
+      <label class="campo">Token de acceso
         <input type="password" name="token" placeholder="github_pat_…" autocomplete="off">
+        <small>Fine-grained, con permiso “Contents: Read and write”. Se guarda solo en este navegador. Usa un repositorio <strong>privado</strong>.</small>
       </label>
-      <p class="ayuda">El token se guarda solo en este navegador. Usa un repositorio <strong>privado</strong> para tus datos.</p>
     </div>
 
     <div class="acciones">
-      <button type="submit" class="primario">Guardar ajustes</button>
-      <button type="button" class="secundario" data-probar>Probar conexión</button>
+      <button type="submit" class="boton relleno">Guardar ajustes</button>
+      <button type="button" class="boton tonal" data-probar>Probar conexión</button>
     </div>
   </form>
 
-  <div class="tarjeta">
+  <div class="tarjeta formulario">
     <h3>Respaldo</h3>
     <p class="ayuda">Descarga todos tus datos o importa un CSV (reemplaza los datos actuales de ese tipo).</p>
     <div class="acciones">
-      <button type="button" class="secundario" data-respaldo="presion">⬇️ presion.csv</button>
-      <button type="button" class="secundario" data-respaldo="glucosa">⬇️ glucosa.csv</button>
+      <button type="button" class="boton tonal" data-respaldo="presion">presion.csv</button>
+      <button type="button" class="boton tonal" data-respaldo="glucosa">glucosa.csv</button>
     </div>
     <div class="fila">
-      <label>Importar como
+      <label class="campo">Importar como
         <select data-importar-tipo><option value="presion">Presión</option><option value="glucosa">Glucosa</option></select>
       </label>
-      <label>Archivo CSV<input type="file" accept=".csv,text/csv" data-importar></label>
+      <label class="campo">Archivo CSV<input type="file" accept=".csv,text/csv" data-importar></label>
     </div>
   </div>
+
+  <p class="nota-legal">Esta aplicación es solo para llevar un registro. No sustituye la opinión de tu médico.</p>
 </section>

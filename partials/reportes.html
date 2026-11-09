@@ -1,31 +1,37 @@
 <section data-vista="reportes">
-  <h2>Reportes</h2>
-  <form class="tarjeta filtros" data-filtros>
-    <label>Tipo
-      <select name="tipo">
-        <option value="presion">Presión arterial</option>
-        <option value="glucosa">Glucosa</option>
-      </select>
-    </label>
-    <label>Desde<input type="date" name="desde"></label>
-    <label>Hasta<input type="date" name="hasta"></label>
-    <div class="rapidos">
-      <button type="button" data-dias="7">7 días</button>
-      <button type="button" data-dias="30">30 días</button>
-      <button type="button" data-dias="90">90 días</button>
-      <button type="button" data-dias="0">Todo</button>
+  <h2 class="titulo-seccion">Reportes</h2>
+  <form class="tarjeta formulario" data-filtros>
+    <div class="segmentado" role="radiogroup" aria-label="Tipo de registro">
+      <label><input type="radio" name="tipo" value="presion" checked><span>Presión</span></label>
+      <label><input type="radio" name="tipo" value="glucosa"><span>Glucosa</span></label>
+    </div>
+    <div class="chips rapidos">
+      <button type="button" class="chip-boton" data-dias="7">7 días</button>
+      <button type="button" class="chip-boton seleccionado" data-dias="30">30 días</button>
+      <button type="button" class="chip-boton" data-dias="90">90 días</button>
+      <button type="button" class="chip-boton" data-dias="0">Todo</button>
+    </div>
+    <div class="fila">
+      <label class="campo">Desde<input type="date" name="desde"></label>
+      <label class="campo">Hasta<input type="date" name="hasta"></label>
     </div>
   </form>
-
-  <div class="acciones">
-    <button type="button" class="secundario" data-descargar="csv">⬇️ Descargar CSV</button>
-    <button type="button" class="secundario" data-descargar="pdf">⬇️ Descargar PDF</button>
-  </div>
 
   <div data-resumen class="resumen"></div>
 
   <div class="tarjeta grafica"><canvas data-grafica="principal" aria-label="Gráfica principal"></canvas></div>
   <div class="tarjeta grafica" data-contenedor-pulso><canvas data-grafica="pulso" aria-label="Gráfica de pulso"></canvas></div>
 
-  <div class="tabla-envoltura"><table class="tabla" data-tabla></table></div>
+  <div class="tarjeta sin-relleno">
+    <div class="tabla-envoltura"><table class="tabla" data-tabla></table></div>
+  </div>
+
+  <div class="acciones descargas">
+    <button type="button" class="boton tonal" data-descargar="csv">
+      <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg> CSV
+    </button>
+    <button type="button" class="boton relleno" data-descargar="pdf">
+      <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg> Reporte PDF
+    </button>
+  </div>
 </section>

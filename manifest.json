@@ -1,0 +1,11 @@
+{
+  "name": "Mi Registro de Salud",
+  "short_name": "Mi Salud",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fef7ff",
+  "theme_color": "#5b3fa8",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

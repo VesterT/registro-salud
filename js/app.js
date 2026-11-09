@@ -16,7 +16,12 @@ const ESQUEMAS = {
   },
 };
 
-const COLORES = { serie1: '#2a78d6', serie2: '#eb6834', serie3: '#1baf7a', guia: '#9b9a95' };
+const COLORES = { serie1: '#6750a4', serie2: '#e0607e', serie3: '#1b998b', guia: '#a59fb0', texto: '#1d1b20', texto2: '#49454f', rejilla: '#ece6f0' };
+
+const ICONOS = {
+  editar: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+  eliminar: '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+};
 
 /* ---------- Utilidades ---------- */
 
@@ -160,7 +165,7 @@ function mostrarEstado() {
   const el = document.getElementById('estado-almacen');
   if (!el) return;
   const a = Ajustes.leer();
-  el.textContent = Ajustes.usaGitHub() ? `☁️ GitHub: ${a.owner}/${a.repo}` : '📱 Solo este dispositivo';
+  el.textContent = Ajustes.usaGitHub() ? `☁️ Sincronizado con GitHub` : '📱 Guardado en este dispositivo';
 }
 
 /* ---------- Clasificación (referencia general, no diagnóstico) ---------- */
@@ -191,8 +196,12 @@ function clasificarGlucosa(v, momento) {
 const clasificar = (tipo, f) => tipo === 'presion' ? clasificarPresion(f.sistolica, f.diastolica) : clasificarGlucosa(f.glucosa, f.momento);
 const etiqueta = ([texto, nivel]) => `<span class="etiqueta ${nivel}">${esc(texto)}</span>`;
 const valorPrincipal = (tipo, f) => tipo === 'presion'
-  ? `${esc(f.sistolica)}/${esc(f.diastolica)} <small>mmHg</small>${f.pulso ? ` · ${esc(f.pulso)} <small>lpm</small>` : ''}`
-  : `${esc(f.glucosa)} <small>mg/dL</small> · ${esc(f.momento)}`;
+  ? `${esc(f.sistolica)}/${esc(f.diastolica)} <small>mmHg</small>`
+  : `${esc(f.glucosa)} <small>mg/dL</small>`;
+const detalle = (tipo, f) => [
+  ...(tipo === 'presion' ? [f.pulso && `${f.pulso} lpm`, f.brazo, f.posicion] : [f.momento]),
+  f.notas,
+].filter(Boolean).map(esc).join(' · ');
 
 /* ---------- Vistas de captura (presión y glucosa) ---------- */
 
@@ -215,17 +224,21 @@ function vistaCaptura(raiz, tipo) {
     const deHoy = filas.filter(f => f.fecha === hoy()).reverse();
     lista.innerHTML = deHoy.length ? deHoy.map(f => `
       <div class="registro">
-        <div><strong>${esc(f.hora)}</strong> — ${valorPrincipal(tipo, f)} ${etiqueta(clasificar(tipo, f))}
-          ${f.notas ? `<div class="ayuda">${esc(f.notas)}</div>` : ''}</div>
-        <div class="botones">
-          <button type="button" class="secundario" data-editar="${esc(f.id)}">Editar</button>
-          <button type="button" class="peligro" data-eliminar="${esc(f.id)}">Eliminar</button>
+        <div class="hora">${esc(f.hora)}</div>
+        <div>
+          <div class="valor">${valorPrincipal(tipo, f)}</div>
+          <div class="detalle">${detalle(tipo, f)}</div>
+          ${etiqueta(clasificar(tipo, f))}
         </div>
-      </div>`).join('') : '<p class="ayuda">Aún no hay registros hoy.</p>';
+        <div class="botones">
+          <button type="button" class="boton-icono" data-editar="${esc(f.id)}" aria-label="Editar" title="Editar">${ICONOS.editar}</button>
+          <button type="button" class="boton-icono peligro" data-eliminar="${esc(f.id)}" aria-label="Eliminar" title="Eliminar">${ICONOS.eliminar}</button>
+        </div>
+      </div>`).join('') : '<div class="vacio">Aún no hay registros hoy.<br>¡Captura el primero arriba! 💜</div>';
   };
 
   const cargar = async () => {
-    lista.innerHTML = '<p class="ayuda">Cargando…</p>';
+    lista.innerHTML = '<div class="vacio">Cargando…</div>';
     try { pintar(await Datos.todas(tipo)); }
     catch (e) { lista.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
   };
@@ -254,7 +267,9 @@ function vistaCaptura(raiz, tipo) {
   cancelar.addEventListener('click', limpiar);
 
   lista.addEventListener('click', async ev => {
-    const idEditar = ev.target.dataset.editar, idEliminar = ev.target.dataset.eliminar;
+    const boton = ev.target.closest('button');
+    if (!boton) return;
+    const idEditar = boton.dataset.editar, idEliminar = boton.dataset.eliminar;
     if (idEditar) {
       const f = (Datos.cache[tipo] || []).find(x => x.id === idEditar);
       if (!f) return;
@@ -328,14 +343,17 @@ function vistaReportes(raiz) {
 
   const dibujar = (clave, canvas, etiquetas, series, titulo, guias = []) => {
     graficas[clave]?.destroy();
-    const linea = (s, color) => ({ ...s, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0.2 });
-    const colores = [COLORES.serie1, COLORES.serie2, COLORES.serie3];
+    const formas = ['circle', 'triangle', 'rectRounded'];
+    const linea = (s, i) => {
+      const color = s.color || [COLORES.serie1, COLORES.serie2, COLORES.serie3][i];
+      return { ...s, borderColor: color, backgroundColor: color, pointStyle: formas[i], borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.25 };
+    };
     graficas[clave] = new Chart(canvas, {
       type: 'line',
       data: {
         labels: etiquetas,
         datasets: [
-          ...series.map((s, i) => linea(s, colores[i])),
+          ...series.map(linea),
           ...guias.map(g => ({ guia: true, label: g.label, data: etiquetas.map(() => g.valor), borderColor: COLORES.guia, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, pointHoverRadius: 0 })),
         ],
       },
@@ -343,13 +361,13 @@ function vistaReportes(raiz) {
         responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          title: { display: true, text: titulo, color: '#0b0b0b', font: { size: 14 } },
-          legend: { display: series.length > 1 || guias.length > 0, labels: { color: '#52514e', usePointStyle: true, filter: i => i.text } },
+          title: { display: true, text: titulo, color: COLORES.texto, font: { size: 14, weight: '600' } },
+          legend: { display: series.length > 1 || guias.length > 0, labels: { color: COLORES.texto2, usePointStyle: true, filter: i => i.text } },
           tooltip: { filter: i => !i.dataset.guia },
         },
         scales: {
-          x: { ticks: { color: '#52514e', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
-          y: { ticks: { color: '#52514e' }, grid: { color: '#ecebe8' } },
+          x: { ticks: { color: COLORES.texto2, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+          y: { ticks: { color: COLORES.texto2 }, grid: { color: COLORES.rejilla } },
         },
       },
     });
@@ -364,7 +382,7 @@ function vistaReportes(raiz) {
 
     resumen.innerHTML = visibles.length
       ? textoResumen(tipo, visibles).map(([k, v]) => `<div class="dato"><span>${k}</span><strong>${v}</strong></div>`).join('')
-      : '<p class="ayuda">No hay registros en el periodo seleccionado.</p>';
+      : '<div class="vacio">No hay registros en el periodo seleccionado.</div>';
 
     const etiquetas = visibles.map(f => `${fechaMx(f.fecha).slice(0, 5)} ${f.hora}`);
     if (tipo === 'presion') {
@@ -374,7 +392,7 @@ function vistaReportes(raiz) {
       ], 'Presión arterial (mmHg)', [{ label: 'Referencia 130/80', valor: 130 }, { label: '', valor: 80 }]);
       contPulso.hidden = false;
       dibujar('pulso', raiz.querySelector('[data-grafica=pulso]'), etiquetas,
-        [{ label: 'Pulso', data: visibles.map(f => f.pulso ? +f.pulso : null) }], 'Pulso (latidos por minuto)');
+        [{ label: 'Pulso', color: COLORES.serie3, data: visibles.map(f => f.pulso ? +f.pulso : null) }], 'Pulso (latidos por minuto)');
     } else {
       dibujar('principal', raiz.querySelector('[data-grafica=principal]'), etiquetas,
         [{ label: 'Glucosa', data: visibles.map(f => +f.glucosa) }], 'Glucosa (mg/dL)',
@@ -404,7 +422,7 @@ function vistaReportes(raiz) {
     const ancho = doc.internal.pageSize.getWidth(), m = 40;
     let y = m;
 
-    doc.setFontSize(18).text(`Reporte de ${esq.nombre}`, m, y); y += 20;
+    doc.setFontSize(18).setTextColor(91, 63, 168).text(`Reporte de ${esq.nombre}`, m, y); y += 20;
     doc.setFontSize(10).setTextColor(90);
     const paciente = Ajustes.leer().paciente;
     if (paciente) { doc.text(`Paciente: ${paciente}`, m, y); y += 14; }
@@ -429,7 +447,8 @@ function vistaReportes(raiz) {
       head: [[...esq.titulos.slice(1), 'Clasificación']],
       body: visibles.map(f => [...esq.columnas.slice(1).map(c => c === 'fecha' ? fechaMx(f[c]) : f[c]), clasificar(tipo, f)[0]]),
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [42, 120, 214] },
+      headStyles: { fillColor: [91, 63, 168] },
+      alternateRowStyles: { fillColor: [247, 242, 250] },
       margin: { left: m, right: m },
     });
 
@@ -441,10 +460,15 @@ function vistaReportes(raiz) {
     doc.save(nombreArchivo('pdf'));
   };
 
-  filtros.addEventListener('change', actualizar);
+  const chips = raiz.querySelectorAll('[data-dias]');
+  filtros.addEventListener('change', ev => {
+    if (ev.target.type === 'date') chips.forEach(c => c.classList.remove('seleccionado'));
+    actualizar();
+  });
   raiz.querySelector('.rapidos').addEventListener('click', ev => {
     const dias = ev.target.dataset.dias;
     if (dias === undefined) return;
+    chips.forEach(c => c.classList.toggle('seleccionado', c === ev.target));
     filtros.desde.value = +dias ? sumarDias(hoy(), 1 - dias) : '';
     filtros.hasta.value = +dias ? hoy() : '';
     actualizar();
@@ -531,12 +555,13 @@ document.body.addEventListener('htmx:afterSwap', ev => {
   if (ev.detail.target.id !== 'contenido') return;
   const vista = ev.detail.target.querySelector('[data-vista]');
   if (vista) VISTAS[vista.dataset.vista]?.(vista);
+  window.scrollTo({ top: 0 });
 });
 
 document.body.addEventListener('htmx:beforeRequest', ev => {
   const boton = ev.detail.elt;
-  if (!boton.closest('.pestanas')) return;
-  document.querySelectorAll('.pestanas button').forEach(b => {
+  if (!boton.closest('.navegacion')) return;
+  document.querySelectorAll('.navegacion button').forEach(b => {
     b.classList.toggle('activa', b === boton);
     b.setAttribute('aria-selected', b === boton);
   });
@@ -544,4 +569,6 @@ document.body.addEventListener('htmx:beforeRequest', ev => {
 
 document.body.addEventListener('htmx:responseError', () => avisar('No se pudo cargar la sección.', 'error'));
 
+document.getElementById('fecha-hoy').textContent =
+  new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 mostrarEstado();
